@@ -2,7 +2,7 @@
 
 | Measure | Before | After |
 |---|---:|---:|
-| Total lines in `bill.py` | 63 | 129 |
+| Total lines in `bill.py` | 63 | 126 |
 | Lines in the longest function | 30 | 31 |
 | Number of places where the slab arithmetic appears | 4 | 1 |
 | Number of magic numbers left | 11 distinct billing values | 0 |
