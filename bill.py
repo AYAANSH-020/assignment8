@@ -1,61 +1,130 @@
-def calc(n, a, u, t, p, f):
-    # n = name, a = address, u = units, t = type, p = previous due, f = senior flag
-    print('Customer:', n)
-    print('Address:', a)
-    if t == 'H':
-        if u <= 100:
-            amt = u * 3
-        elif u <= 300:
-            amt = 100 * 3 + (u - 100) * 5
-        else:
-            amt = 100 * 3 + 200 * 5 + (u - 300) * 8
-    elif t == 'C':
-        if u <= 100:
-            amt = u * 6
-        elif u <= 300:
-            amt = 100 * 6 + (u - 100) * 9
-        else:
-            amt = 100 * 6 + 200 * 9 + (u - 300) * 12
+
+# bill.py - Refactored electricity bill module
+
+# Slab limits
+FIRST_SLAB_LIMIT = 100
+SECOND_SLAB_LIMIT = 300
+
+# Household connection rates
+HOUSEHOLD_FIRST_RATE = 3
+HOUSEHOLD_SECOND_RATE = 5
+HOUSEHOLD_THIRD_RATE = 8
+
+# Commercial connection rates
+COMMERCIAL_FIRST_RATE = 6
+COMMERCIAL_SECOND_RATE = 9
+COMMERCIAL_THIRD_RATE = 12
+
+# Tax, discount, and surcharge rates
+TAX_RATE = 0.18
+SENIOR_DISCOUNT_RATE = 0.05
+LATE_SURCHARGE_RATE = 0.02
+
+
+# Step 4: Extract slab calculation into one reusable function
+def calculate_slab_amount(units, first_rate, second_rate, third_rate):
+    if units <= FIRST_SLAB_LIMIT:
+        return units * first_rate
+
+    elif units <= SECOND_SLAB_LIMIT:
+        return (
+            FIRST_SLAB_LIMIT * first_rate
+            + (units - FIRST_SLAB_LIMIT) * second_rate
+        )
+
     else:
+        return (
+            FIRST_SLAB_LIMIT * first_rate
+            + (SECOND_SLAB_LIMIT - FIRST_SLAB_LIMIT) * second_rate
+            + (units - SECOND_SLAB_LIMIT) * third_rate
+        )
+
+
+# Step 5: Extract tax calculation
+def calculate_tax(amount):
+    return amount * TAX_RATE
+
+
+# Step 5: Extract senior discount
+def apply_senior_discount(amount, connection_type, senior):
+    if senior == 1 and connection_type == 'H':
+        return amount - amount * SENIOR_DISCOUNT_RATE
+
+    return amount
+
+
+# Step 5: Extract late surcharge
+def calculate_late_surcharge(previous_due):
+    if previous_due > 0:
+        return previous_due * LATE_SURCHARGE_RATE
+
+    return 0
+
+
+# Step 6: Shared calculation function
+def calculate_total(units, connection_type, previous_due, senior):
+    if connection_type == 'H':
+        amount = calculate_slab_amount(
+            units,
+            HOUSEHOLD_FIRST_RATE,
+            HOUSEHOLD_SECOND_RATE,
+            HOUSEHOLD_THIRD_RATE
+        )
+
+    elif connection_type == 'C':
+        amount = calculate_slab_amount(
+            units,
+            COMMERCIAL_FIRST_RATE,
+            COMMERCIAL_SECOND_RATE,
+            COMMERCIAL_THIRD_RATE
+        )
+
+    else:
+        return None
+
+    # Preserve original behavior: tax is calculated before discount
+    tax_amount = calculate_tax(amount)
+
+    amount = apply_senior_discount(
+        amount, connection_type, senior
+    )
+
+    total_amount = amount + tax_amount + previous_due
+    total_amount += calculate_late_surcharge(previous_due)
+
+    return total_amount
+
+
+# Public function 1: prints the bill and returns the amount
+def calc(customer_name, address, units, connection_type, previous_due, senior):
+    print('Customer:', customer_name)
+    print('Address:', address)
+
+    total_amount = calculate_total(
+        units, connection_type, previous_due, senior
+    )
+
+    if total_amount is None:
         print('bad type')
         return -1
-    tax = amt * 0.18
-    if f == 1 and t == 'H':
-        amt = amt - amt * 0.05
-    temp = amt + tax
-    total = amt + tax + p
-    if p > 0:
-        total = total + p * 0.02
-    print('Total:', total)
-    return total
+
+    print('Total:', total_amount)
+    return total_amount
 
 
-def calc2(n, a, u, t, p, f):
-    # same as calc but returns a receipt string instead of printing
-    s = ''
-    s = s + 'Customer: ' + n + '\n'
-    s = s + 'Address: ' + a + '\n'
-    if t == 'H':
-        if u <= 100:
-            amt = u * 3
-        elif u <= 300:
-            amt = 100 * 3 + (u - 100) * 5
-        else:
-            amt = 100 * 3 + 200 * 5 + (u - 300) * 8
-    elif t == 'C':
-        if u <= 100:
-            amt = u * 6
-        elif u <= 300:
-            amt = 100 * 6 + (u - 100) * 9
-        else:
-            amt = 100 * 6 + 200 * 9 + (u - 300) * 12
-    else:
+# Public function 2: returns a receipt string
+def calc2(customer_name, address, units, connection_type, previous_due, senior):
+    total_amount = calculate_total(
+        units, connection_type, previous_due, senior
+    )
+
+    if total_amount is None:
         return 'bad type'
-    tax = amt * 0.18
-    if f == 1 and t == 'H':
-        amt = amt - amt * 0.05
-    total = amt + tax + p
-    if p > 0:
-        total = total + p * 0.02
-    s = s + 'Total: ' + str(total)
-    return s
+
+    receipt = (
+        'Customer: ' + customer_name + '\n'
+        + 'Address: ' + address + '\n'
+        + 'Total: ' + str(total_amount)
+    )
+
+    return receipt
